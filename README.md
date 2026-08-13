@@ -20,7 +20,7 @@ From this repository:
 
 ```sh
 cargo build
-zellij --session vertical-sidebar-demo --layout layouts/dev.kdl
+zellij -s vertical-sidebar-demo -n layouts/dev.kdl
 ```
 
 The debug layout renders the current username in the left sidebar.
@@ -28,7 +28,23 @@ The debug layout renders the current username in the left sidebar.
 ## Reload In An Existing Zellij Session
 
 ```sh
-zellij action start-or-reload-plugin file:/home/kmert/zellij-plugins/target/wasm32-wasip1/debug/vertical-sidebar.wasm
+zellij action start-or-reload-plugin file:target/wasm32-wasip1/debug/vertical-sidebar.wasm
+```
+
+## Release
+
+GitHub Actions builds and uploads the release WASM when a version tag is pushed:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release assets are:
+
+```text
+vertical-sidebar.wasm
+SHA256SUMS
 ```
 
 ## Debugging
