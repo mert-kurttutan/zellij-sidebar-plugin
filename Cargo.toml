@@ -1,0 +1,14 @@
+[package]
+name = "vertical-sidebar"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "A Zellij vertical sidebar plugin."
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+zellij-tile = "0.44.3"
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1

@@ -1,0 +1,18 @@
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane split_direction="vertical" {
+            pane name="side" size="16%" borderless=false {
+                plugin location="file:/home/kmert/zellij-plugins/target/wasm32-wasip1/debug/vertical-sidebar.wasm"
+            }
+            pane name="shell" focus=true
+        }
+        pane size=1 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+    tab name="vertical-sidebar" focus=true
+}
