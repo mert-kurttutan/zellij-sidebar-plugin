@@ -34,8 +34,9 @@ zellij action start-or-reload-plugin file:target/wasm32-wasip1/debug/vertical-si
 ## Release
 
 Update the package version in `Cargo.toml`, merge it to `main`, then run the
-`Cut Release` workflow in GitHub Actions. It reads the Cargo package version and
-pushes a matching tag such as `v0.1.0`.
+`Cut Release` workflow in GitHub Actions. It reads the Cargo package version,
+pushes a matching tag such as `v0.1.0`, builds the release WASM, and uploads it
+to the GitHub Release.
 
 From the CLI:
 
@@ -43,8 +44,8 @@ From the CLI:
 gh workflow run "Cut Release"
 ```
 
-The pushed tag triggers the `Release` workflow, which builds and uploads the
-release WASM.
+The separate `Release` workflow also builds and uploads the same assets when a
+version tag is pushed manually.
 
 The release assets are:
 
