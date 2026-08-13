@@ -33,12 +33,18 @@ zellij action start-or-reload-plugin file:target/wasm32-wasip1/debug/vertical-si
 
 ## Release
 
-GitHub Actions builds and uploads the release WASM when a version tag is pushed:
+Update the package version in `Cargo.toml`, merge it to `main`, then run the
+`Cut Release` workflow in GitHub Actions. It reads the Cargo package version and
+pushes a matching tag such as `v0.1.0`.
+
+From the CLI:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+gh workflow run "Cut Release"
 ```
+
+The pushed tag triggers the `Release` workflow, which builds and uploads the
+release WASM.
 
 The release assets are:
 
