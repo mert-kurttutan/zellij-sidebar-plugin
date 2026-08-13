@@ -1,6 +1,6 @@
 # Vertical Sidebar
 
-A small Zellij WebAssembly plugin example that renders the current username vertically for use as a narrow left sidebar.
+A small Zellij WebAssembly plugin example that renders the current username and clickable tab list in a narrow left sidebar.
 
 ## Build
 
@@ -45,3 +45,7 @@ For heavier terminal/debug output, start Zellij with:
 ```sh
 zellij --debug --session vertical-sidebar-demo --layout layouts/dev.kdl
 ```
+
+## Development Notice
+
+This project was developed with LLM-assisted coding. Human review and local testing were used to validate the generated changes.
