@@ -27,7 +27,6 @@ impl ZellijPlugin for State {
             PermissionType::ChangeApplicationState,
         ]);
         subscribe(&[EventType::TabUpdate, EventType::Mouse]);
-        set_selectable(false);
     }
 
     fn update(&mut self, event: Event) -> bool {
