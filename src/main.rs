@@ -9,6 +9,7 @@ struct State {
     username: String,
     tabs: Vec<Tab>,
     tab_hit_rows: Vec<(usize, usize)>,
+    tab_close_hit_cells: Vec<(usize, usize, usize)>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -39,7 +40,14 @@ impl ZellijPlugin for State {
                 eprintln!("vertical-sidebar permission result={status:?}");
                 false
             }
-            Event::Mouse(Mouse::LeftClick(line, _column)) => {
+            Event::Mouse(Mouse::LeftClick(line, column)) => {
+                if let Some(tab_index) =
+                    tab_close_index_for_cell(line, column, &self.tab_close_hit_cells)
+                {
+                    eprintln!("vertical-sidebar closing tab index={tab_index}");
+                    close_tab_with_index(tab_index);
+                    return false;
+                }
                 if let Some(tab_index) = tab_index_for_row(line, &self.tab_hit_rows) {
                     eprintln!("vertical-sidebar clicked line={line} tab_index={tab_index}");
                     switch_tab_to(tab_index as u32);
@@ -67,6 +75,7 @@ impl ZellijPlugin for State {
 
         let sidebar = sidebar_render(&self.username, &self.tabs, rows, cols);
         self.tab_hit_rows = sidebar.tab_hit_rows;
+        self.tab_close_hit_cells = sidebar.tab_close_hit_cells;
 
         for line in sidebar.lines {
             println!("{}", line.text);
@@ -90,6 +99,7 @@ struct RenderLine {
 struct SidebarRender {
     lines: Vec<RenderLine>,
     tab_hit_rows: Vec<(usize, usize)>,
+    tab_close_hit_cells: Vec<(usize, usize, usize)>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -126,6 +136,7 @@ fn clipped_line(text: &str, cols: usize) -> String {
 fn sidebar_render(username: &str, tabs: &[Tab], rows: usize, cols: usize) -> SidebarRender {
     let mut lines = Vec::new();
     let mut tab_hit_rows = Vec::new();
+    let mut tab_close_hit_cells = Vec::new();
 
     push_line(&mut lines, styled_header(username, cols), rows);
     push_line(&mut lines, divider(cols), rows);
@@ -140,6 +151,7 @@ fn sidebar_render(username: &str, tabs: &[Tab], rows: usize, cols: usize) -> Sid
         return SidebarRender {
             lines,
             tab_hit_rows,
+            tab_close_hit_cells,
         };
     }
 
@@ -157,14 +169,19 @@ fn sidebar_render(username: &str, tabs: &[Tab], rows: usize, cols: usize) -> Sid
         }
 
         let row = lines.len();
-        if push_line(&mut lines, tab_render_line(tab, cols), rows) {
+        let (tab_line, close_col) = tab_render_line(tab, cols);
+        if push_line(&mut lines, tab_line, rows) {
             tab_hit_rows.push((row, tab.position + 1));
+            if let Some(close_col) = close_col {
+                tab_close_hit_cells.push((row, close_col, tab.position));
+            }
         }
     }
 
     SidebarRender {
         lines,
         tab_hit_rows,
+        tab_close_hit_cells,
     }
 }
 
@@ -196,7 +213,7 @@ fn item_divider(cols: usize) -> String {
     ansi_dim(&format!(" {} ", "⎺".repeat(cols - 2)))
 }
 
-fn tab_render_line(tab: &Tab, cols: usize) -> String {
+fn tab_render_line(tab: &Tab, cols: usize) -> (String, Option<usize>) {
     let marker = if tab.active { ">>" } else { "  " };
     let fallback_name = (tab.position + 1).to_string();
     let name = if tab.name.trim().is_empty() {
@@ -209,12 +226,33 @@ fn tab_render_line(tab: &Tab, cols: usize) -> String {
     } else {
         name.to_owned()
     };
-    let line = tab_line(tab.position, marker, &display_name, cols);
-    if tab.active {
-        ansi_reverse(&ansi_bold(&line))
+    let close_width = if cols >= 3 { 2 } else { 0 };
+    let label_width = cols.saturating_sub(close_width);
+    let base_line = tab_line(tab.position, marker, &display_name, label_width);
+    let close_col = (close_width > 0).then_some(cols - 1);
+    let line = if close_col.is_some() {
+        format!("{base_line:<label_width$} ×")
     } else {
-        ansi_bold(&line)
+        base_line
+    };
+    if tab.active {
+        (ansi_reverse(&ansi_bold(&line)), close_col)
+    } else {
+        (ansi_bold(&line), close_col)
     }
+}
+
+fn tab_close_index_for_cell(
+    row: isize,
+    column: usize,
+    hit_cells: &[(usize, usize, usize)],
+) -> Option<usize> {
+    let row = usize::try_from(row).ok()?;
+    hit_cells
+        .iter()
+        .find_map(|(hit_row, hit_column, tab_index)| {
+            (*hit_row == row && *hit_column == column).then_some(*tab_index)
+        })
 }
 
 fn tab_line(position: usize, marker: &str, name: &str, cols: usize) -> String {
@@ -292,11 +330,12 @@ mod tests {
         assert_eq!(lines[1], "\u{1b}[2m------------\u{1b}[0m");
         assert_eq!(lines[2], "");
         assert_eq!(lines[3], "\u{1b}[2mtabs\u{1b}[0m");
-        assert_eq!(lines[4], "\u{1b}[7m\u{1b}[1m1 >> ONE\u{1b}[0m\u{1b}[0m");
+        assert_eq!(lines[4], "\u{1b}[7m\u{1b}[1m1 >> ONE   ×\u{1b}[0m\u{1b}[0m");
         assert_eq!(lines[5], "");
         assert_eq!(lines[6], "\u{1b}[2m ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺ \u{1b}[0m");
-        assert_eq!(lines[7], "\u{1b}[1m2    two\u{1b}[0m");
+        assert_eq!(lines[7], "\u{1b}[1m2    two   ×\u{1b}[0m");
         assert_eq!(sidebar.tab_hit_rows, vec![(4, 1), (5, 1), (6, 2), (7, 2)]);
+        assert_eq!(sidebar.tab_close_hit_cells, vec![(4, 9, 0), (7, 9, 1)]);
     }
 
     #[test]
@@ -322,8 +361,20 @@ mod tests {
 
         assert_eq!(
             tab_render_line(&tab, 10),
-            "\u{1b}[7m\u{1b}[1m3 >> 3\u{1b}[0m\u{1b}[0m"
+            (
+                "\u{1b}[7m\u{1b}[1m3 >> 3   ×\u{1b}[0m\u{1b}[0m".to_owned(),
+                Some(9)
+            )
         );
+    }
+
+    #[test]
+    fn tab_close_index_for_cell_requires_exact_row_and_column() {
+        let hit_cells = vec![(4, 9, 0), (7, 9, 1)];
+
+        assert_eq!(tab_close_index_for_cell(4, 9, &hit_cells), Some(0));
+        assert_eq!(tab_close_index_for_cell(4, 8, &hit_cells), None);
+        assert_eq!(tab_close_index_for_cell(-1, 9, &hit_cells), None);
     }
 
     #[test]
