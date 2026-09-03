@@ -5,7 +5,7 @@ A small Zellij WebAssembly plugin example that renders the current username and 
 ## Build
 
 ```sh
-cargo build
+cargo build --target wasm32-wasip1
 ```
 
 The debug plugin artifact is:
@@ -13,6 +13,20 @@ The debug plugin artifact is:
 ```text
 target/wasm32-wasip1/debug/vertical-sidebar.wasm
 ```
+
+## Nix Development Shell
+
+NixOS users can use the flake to get a consistent Rust/WASI toolchain and
+linker:
+
+```sh
+nix develop
+cargo build --target wasm32-wasip1
+```
+
+The shell includes Rust with the `wasm32-wasip1` target, Clang, LLD, and
+Zellij. The resulting plugin is written to
+`target/wasm32-wasip1/debug/vertical-sidebar.wasm`.
 
 ## Load In A New Zellij Session
 
