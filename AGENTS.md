@@ -80,6 +80,12 @@ layout {
 zellij action start-or-reload-plugin file:target/wasm32-wasi/debug/vertical-sidebar.wasm
 ```
 
+## Development Environment
+
+- This repository's Rust tooling and WASM target are provided by `flake.nix`.
+- Run Cargo, Zellij, and other development commands inside the shell: `nix develop --command <command>` (or enter it first with `nix develop`).
+- Do not invoke the host toolchain for project build or verification commands.
+
 ## Build And Distribution
 
 - Build debug artifacts with `cargo build`.
